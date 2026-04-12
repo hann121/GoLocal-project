@@ -1,6 +1,7 @@
 package com.hmdp.config;
 
 import com.hmdp.utils.LoginInterceptor;
+import com.hmdp.utils.RefreshTokenInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,8 +14,14 @@ public class MvcConfig implements WebMvcConfigurer {
     @Autowired
     private LoginInterceptor loginInterceptor;
 
+    @Autowired
+    private RefreshTokenInterceptor refreshTokenInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(refreshTokenInterceptor)
+                .addPathPatterns("/**")
+                .order(0);
         registry.addInterceptor(loginInterceptor)
                 .excludePathPatterns(
                         "/user/code",
@@ -24,6 +31,6 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/shop-type/**",
                         "/upload/**",
                         "/voucher/**"
-                );
+                ).order(1);
     }
 }

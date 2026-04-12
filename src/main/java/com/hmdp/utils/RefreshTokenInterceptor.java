@@ -1,10 +1,8 @@
 package com.hmdp.utils;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.StrUtil;
 import com.hmdp.dto.UserDTO;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
@@ -20,24 +18,37 @@ import static com.hmdp.utils.RedisConstants.LOGIN_USER_KEY;
 import static com.hmdp.utils.RedisConstants.LOGIN_USER_TTL;
 
 /*
-* 定义拦截器,此层需要根据userholder判断是否放行
+* 定义拦截器，此层拦截器需要实现获取token，并封装完成UserHolder,
 * */
 @Component
 @Slf4j
-public class LoginInterceptor implements HandlerInterceptor {
+public class RefreshTokenInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     @PostConstruct
     public void init(){
-        log.info("=====登录验证拦截器启动=====");
+        log.info("=====刷新token的拦截器启动=====");
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        //判断是否要拦截
-        if(UserHolder.getUser() == null){
-            response.setStatus(401);
-            return false;
+        //1、获取请求头token
+        String token = request.getHeader("authorization");
+        //报错未授权
+        if(token==null || token.trim().isEmpty()){
+            return true;
         }
+        //获取用户信息
+        Map<Object,Object> userMap = stringRedisTemplate.opsForHash().entries(LOGIN_USER_KEY+token);
+        if(userMap.isEmpty()){
+            return true;
+        }
+        UserDTO userDTO = BeanUtil.fillBeanWithMap(userMap,new UserDTO(),false);
+        UserHolder.saveUser(userDTO);
+        //设置token刷新时间
+        stringRedisTemplate.expire(LOGIN_USER_KEY+token,LOGIN_USER_TTL, TimeUnit.MINUTES);
         //放行
         return true;
     }
