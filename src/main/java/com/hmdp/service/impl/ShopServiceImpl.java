@@ -6,6 +6,7 @@ import com.hmdp.entity.Shop;
 import com.hmdp.mapper.ShopMapper;
 import com.hmdp.service.IShopService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import org.redisson.api.RBloomFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,14 +32,19 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     private StringRedisTemplate stringRedisTemplate;
     @Autowired
     private TaskExecutor taskExecutor;
-
+    @Autowired
+    private RBloomFilter<Long> bloomFilter;
     /*
      * 根据id查询商铺信息
      * */
     @Override
     public Result queryById(Long id) {
-        //从redis查询是否有商铺缓存信息
         String key = CACHE_SHOP_KEY + id;
+        //先通过布隆过滤层
+        if (!bloomFilter.contains(id)) {
+            return Result.fail("商铺不存在!");
+        }
+        //从redis查询是否有商铺缓存信息
         String shopJson = stringRedisTemplate.opsForValue().get(key);
         //若存在，直接取
         if (shopJson != null) {
@@ -49,6 +55,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         Shop shop = getById(id);
         //不存在数据库，报错
         if (shop == null) {
+            //缓存空值，防止穿透
+            stringRedisTemplate.opsForValue().set(key,"",2,TimeUnit.MINUTES);
             return Result.fail("商铺不存在!");
         }
         //存在数据库，取出信息放入缓存，并返回商铺信息
