@@ -14,4 +14,9 @@ public class ThreadPoolConfig {
     public Executor taskExecutor(){
         return Executors.newSingleThreadExecutor();
     }
+
+    @Bean("refreshShopExecutor")
+    public Executor RefreshShopExecutor(){
+        return Executors.newSingleThreadExecutor();
+    }
 }
