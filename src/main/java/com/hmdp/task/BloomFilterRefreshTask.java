@@ -20,7 +20,7 @@ public class BloomFilterRefreshTask {
     @Autowired
     private RBloomFilter<Long> bloomFilter;
 
-    @Scheduled(cron = "0 0/3 * * * *")
+    @Scheduled(cron = "0 0/6 * * * *")
     public void refreshBloomFilterData(){
         log.info("===== 每3分钟刷新一次布隆过滤器 =====");
         //删除布隆过滤器，清空旧数据

@@ -99,6 +99,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         }
         //封装用户信息，生成token
         String token = UUID.randomUUID().toString();
+        log.info("token值为:{}",token);
         UserDTO userDTO = new UserDTO();
         BeanUtils.copyProperties(user,userDTO);
         //封装成map，以便后续hash

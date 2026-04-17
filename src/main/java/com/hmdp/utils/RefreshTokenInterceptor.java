@@ -40,7 +40,6 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         if(token==null || token.trim().isEmpty()){
             return true;
         }
-        //获取用户信息
         Map<Object,Object> userMap = stringRedisTemplate.opsForHash().entries(LOGIN_USER_KEY+token);
         if(userMap.isEmpty()){
             return true;
