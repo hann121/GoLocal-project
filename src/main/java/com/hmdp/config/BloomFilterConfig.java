@@ -13,11 +13,17 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class BloomFilterConfig {
 
-    @Bean
-    public RBloomFilter<Long> bloomFilter(RedissonClient redissonClient) {
-        RBloomFilter<Long> filter = redissonClient.getBloomFilter("bloom:filter");
+    @Bean("shopBloomFilter")
+    public RBloomFilter<Long> ShopBloomFilter(RedissonClient redissonClient) {
+        RBloomFilter<Long> filter = redissonClient.getBloomFilter("bloom:filter:shop");
         filter.tryInit(100000L, 0.01);
         return filter;
     }
 
+    @Bean("seckillVoucherBloomFilter")
+    public RBloomFilter<Long> SeckillVoucherbloomFilter(RedissonClient redissonClient) {
+        RBloomFilter<Long> filter = redissonClient.getBloomFilter("bloom:filter:seckillVoucher");
+        filter.tryInit(100000L, 0.01);
+        return filter;
+    }
 }

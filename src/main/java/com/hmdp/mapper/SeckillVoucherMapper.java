@@ -2,6 +2,9 @@ package com.hmdp.mapper;
 
 import com.hmdp.entity.SeckillVoucher;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +16,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  */
 public interface SeckillVoucherMapper extends BaseMapper<SeckillVoucher> {
 
+    //选出秒杀券
+    @Select("select voucher_id from tb_seckill_voucher")
+    List<Long> selectAllId();
 }

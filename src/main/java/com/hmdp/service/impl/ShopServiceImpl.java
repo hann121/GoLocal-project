@@ -42,7 +42,8 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     @Autowired
     private TaskExecutor taskExecutor;
     @Autowired
-    private RBloomFilter<Long> bloomFilter;
+    @Qualifier("shopBloomFilter")
+    private RBloomFilter<Long> shopBloomFilter;
     @Autowired
     private LockUtil lockUtil;
 
@@ -57,7 +58,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     public Result queryById(Long id) {
         String key = CACHE_SHOP_KEY + id;
         //先通过布隆过滤层
-        if (!bloomFilter.contains(id)) {
+        if (!shopBloomFilter.contains(id)) {
             return Result.fail("商铺不存在!");
         }
         //从redis查询是否有商铺缓存信息

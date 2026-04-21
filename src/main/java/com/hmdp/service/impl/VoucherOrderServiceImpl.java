@@ -11,12 +11,18 @@ import com.hmdp.utils.LockUtil;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -43,11 +49,53 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Autowired
     private LockUtil lockUtil;
 
+    @Autowired
+    @Qualifier("seckillVoucherBloomFilter")
+    private RBloomFilter<Long> seckillVoucherBloomFilter;
+
     public static final String LOCK_PRE = "order";
 
+    private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
+    static {
+        SECKILL_SCRIPT = new DefaultRedisScript<>();
+        SECKILL_SCRIPT.setLocation(new ClassPathResource("seckill.lua"));
+        SECKILL_SCRIPT.setResultType(Long.class);
+    }
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
     /*
+     * 秒杀券下单
+     * */
+    @Override
+    public Result seckillVoucher(Long voucherId) {
+        //布隆判断是否存在该秒杀券
+        if(!seckillVoucherBloomFilter.contains(voucherId)){
+            return Result.fail("不存在对应的秒杀券!");
+        }
+        Long userId = UserHolder.getUser().getId();
+        //执行lua脚本
+        Long result = stringRedisTemplate.execute(
+                SECKILL_SCRIPT,
+                Collections.emptyList(),
+                voucherId.toString(), userId.toString()
+        );
+        int r = result.intValue();
+        if(r != 0){
+            return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
+        }
+        //TODO 将订单放入队列
+        return Result.ok();
+    }
+
+
+    /*
+    */
+/*
     * 秒杀券下单
-    * */
+    * *//*
+
     @Override
     public Result seckillVoucher(Long voucherId) {
         //查询秒杀券信息
@@ -86,6 +134,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             lockUtil.unLock(lockKey);
         }
     }
+*/
 
     /*
     * 生成订单

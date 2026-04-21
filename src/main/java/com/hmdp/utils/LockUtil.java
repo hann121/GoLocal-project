@@ -38,7 +38,15 @@ public class LockUtil {
         }
     }
 
-    //加锁,用于秒杀券单人单券
+    /*//加锁,用于秒杀券单人单券
+    public boolean tryLock(String key,long timeoutSec){
+        log.info(Thread.currentThread().getName()+"抢到互斥锁");
+        String threadId = ID_PRE + Thread.currentThread().getId();
+        Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(key,threadId,timeoutSec, TimeUnit.SECONDS);
+        return BooleanUtil.isTrue(flag);
+    }*/
+
+    //加锁,用于秒杀券单人单券(可重入锁
     public boolean tryLock(String key,long timeoutSec){
         log.info(Thread.currentThread().getName()+"抢到互斥锁");
         String threadId = ID_PRE + Thread.currentThread().getId();
