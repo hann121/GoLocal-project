@@ -72,6 +72,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Qualifier("seckillVoucherBloomFilter")
     private RBloomFilter<Long> seckillVoucherBloomFilter;
 
+    @Autowired
+    private IVoucherOrderService proxy;
+
     public static final String LOCK_PRE = "order";
 
     //lua脚本
@@ -84,9 +87,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
-
-    //代理对象
-    private IVoucherOrderService proxy;
     @Autowired
     private RedissonClient redissonClient;
     @Autowired
@@ -108,7 +108,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             } catch (InterruptedException e) {
                 return;
             }
-
             while(isRunning){
                 try{
 
@@ -122,14 +121,13 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                             StreamOffset.create(queueName, ReadOffset.lastConsumed())
                     );
                     if(list==null || list.isEmpty()){
-                        log.info("消息队列没获取到消息，重新获取");
                         continue;
                     }
                     MapRecord<String,Object,Object> record = list.get(0);
                     Map<Object,Object> values = record.getValue();
                     VoucherOrder voucherOrder = BeanUtil.fillBeanWithMap(values, new VoucherOrder(), true);
                     //下单
-                    createOrder(voucherOrder);
+                    proxy.createOrder(voucherOrder);
                     //下单后ACK确认
                     stringRedisTemplate.opsForStream().acknowledge(queueName,"g1",record.getId());
                 }catch (Exception e){
@@ -158,7 +156,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 Map<Object,Object> values = record.getValue();
                 VoucherOrder voucherOrder = BeanUtil.fillBeanWithMap(values, new VoucherOrder(), true);
                 //下单
-                createOrder(voucherOrder);
+                proxy.createOrder(voucherOrder);
                 //下单后ACK确认
                 stringRedisTemplate.opsForStream().acknowledge(queueName,"g1",record.getId());
             }catch (Exception e){
@@ -196,7 +194,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail(r == 1 ? "库存不足" : "不能重复下单");
         }
         //获取代理对象
-        proxy =(IVoucherOrderService) AopContext.currentProxy();
         //new一个消费者线程调用线程池在后台专门进行数据库处理
 
         return Result.ok(orderId);
@@ -252,7 +249,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     /*
      * 生成订单
      * */
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void createOrder(VoucherOrder voucherOrder){
         //由于是新的线程执行下单任务，所以不能调用UserHolder
         Long userId = voucherOrder.getUserId();
@@ -270,12 +267,13 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         try {
             //获取成功
             //查询订单是否买过
-            int count = query().eq("user_id", userId)
+            Integer count = query().eq("user_id", userId)
                     .eq("voucher_id", voucherId)
                     .count();
             // 买过，返回已买过
             if (count > 0) {
                 log.error("不允许重复下单");
+                return;
             }
             //没买过，则扣减库存，
             boolean success = seckillVoucherService.update()
@@ -290,6 +288,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                 return;
             }
             //创建订单
+            log.info("后台处理订单");
             save(voucherOrder);
         }finally {
             redisLock.unlock();

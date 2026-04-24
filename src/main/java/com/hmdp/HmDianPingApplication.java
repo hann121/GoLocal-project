@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @Slf4j
 @EnableScheduling //任务定时器
-@EnableAspectJAutoProxy(exposeProxy = true) // 加这个！
+@EnableAspectJAutoProxy(exposeProxy = true) // 开启暴露代理
 public class HmDianPingApplication {
 
     public static void main(String[] args) {
