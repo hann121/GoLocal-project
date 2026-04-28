@@ -1,9 +1,11 @@
 package com.hmdp.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.hmdp.dto.LoginFormDTO;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.UserDTO;
+import com.hmdp.entity.User;
 import com.hmdp.entity.UserInfo;
 import com.hmdp.service.IUserInfoService;
 import com.hmdp.service.IUserService;
@@ -58,8 +60,7 @@ public class UserController {
      */
     @PostMapping("/logout")
     public Result logout(){
-        // TODO 实现登出功能
-        return Result.fail("功能未完成");
+        return Result.ok("成功退出!");
     }
 
     @GetMapping("/me")
@@ -82,4 +83,19 @@ public class UserController {
         // 返回
         return Result.ok(info);
     }
+
+    /*
+    * 查看用户主页
+    * */
+    @GetMapping("/{id}")
+    public Result queryUserById(@PathVariable("id")Long id){
+        log.info("调用查看用户主页接口:{}",id);
+        User user = userService.getById(id);
+        if(user == null){
+            return Result.ok();
+        }
+        UserDTO userDTO = BeanUtil.copyProperties(user,UserDTO.class);
+        return Result.ok(userDTO);
+    }
+
 }
