@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.hmdp.utils.RedisConstants.FOLLOW_KEY_PRE;
+
 /**
  * <p>
  *  服务实现类
@@ -42,10 +44,11 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     @Resource
     private IUserService userService;
 
-    private static final String FOLLOW_KEY_PRE = "follow:";
+
     /*
     * 关注用户
     * */
+    //TODO 推流关注人的博客消息，
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result follow(Long id, Boolean isFollow) {

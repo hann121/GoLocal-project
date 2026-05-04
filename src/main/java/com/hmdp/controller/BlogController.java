@@ -34,16 +34,13 @@ public class BlogController {
     @Resource
     private IUserService userService;
 
+    /*
+    * 发布博客
+    * */
     @PostMapping
     public Result saveBlog(@RequestBody Blog blog) {
-        // 获取登录用户
-        UserDTO user = UserHolder.getUser();
-        blog.setUserId(user.getId());
-        log.info("上传博客{}",blog);
-        // 保存探店博文
-        blogService.save(blog);
-        // 返回id
-        return Result.ok(blog.getId());
+        log.info("调用发布博客接口:{}",blog);
+        return blogService.saveBlog(blog);
     }
 
     @PutMapping("/like/{id}")
@@ -95,5 +92,15 @@ public class BlogController {
         // 获取当前页数据
         List<Blog> records = page.getRecords();
         return Result.ok(records);
+    }
+
+    /*
+    * 查看关注用户的博客消息
+    * */
+    @GetMapping("/of/follow")
+    public Result queryFollowsBlogs(@RequestParam("lastId")Long max,
+                                    @RequestParam(value = "offset",defaultValue = "0")Integer offset){
+        log.info("调用查看关注用户的博客消息接口:{}.{}",max,offset);
+        return blogService.queryFollowsBlogs(max,offset);
     }
 }

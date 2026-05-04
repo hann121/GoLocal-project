@@ -20,16 +20,20 @@ public class UploadController {
     @PostMapping("blog")
     public Result uploadImage(@RequestParam("file") MultipartFile image) {
         try {
-            // 获取原始文件名称
+            // 🔥 自动创建上传目录（防止目录不存在报错）
+            File dir = new File(SystemConstants.IMAGE_UPLOAD_DIR);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            // 生成文件名
             String originalFilename = image.getOriginalFilename();
-            // 生成新文件名
             String fileName = createNewFileName(originalFilename);
             // 保存文件
-            image.transferTo(new File(SystemConstants.IMAGE_UPLOAD_DIR, fileName));
-            // 返回结果
-            log.debug("文件上传成功，{}", fileName);
+            image.transferTo(new File(dir, fileName));
+            log.debug("文件上传成功：{}", fileName);
             return Result.ok(fileName);
         } catch (IOException e) {
+            log.error("文件上传失败", e);
             throw new RuntimeException("文件上传失败", e);
         }
     }
